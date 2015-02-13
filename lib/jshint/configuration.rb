@@ -1,4 +1,5 @@
 require 'yaml'
+require "multi_json"
 
 module Jshint
   # Configuration object containing JSHint lint settings
@@ -12,7 +13,7 @@ module Jshint
     # @param path [String] The path to the config file
     def initialize(path = nil)
       @path = path || default_config_path
-      @options = parse_yaml_config
+      @options = parse_config
     end
 
     # Returns the value of the options Hash if one exists
@@ -82,16 +83,23 @@ module Jshint
 
     private
 
-    def read_config_file
-      @read_config_file ||= File.open(@path, 'r:UTF-8').read
+    def parse_config
+      raw = File.open(@path, 'r:UTF-8').read
+      if @path =~ /\.jshintrc\z/
+        default_config.merge("options" => MultiJson.load(raw))
+      else
+        default_config.merge(YAML.load(raw))
+      end
     end
 
-    def parse_yaml_config
-      YAML.load(read_config_file)
+    def default_config
+      { "files" => ["**/*.js"] }
     end
 
     def default_config_path
-      File.join(defined?(Rails) ? Rails.root : Dir.pwd, 'config', 'jshint.yml')
+      root = defined?(Rails) ? Rails.root : Dir.pwd
+      files = ['config/jshint.yml', '.jshintrc'].map { |p| File.join(root, p) }
+      files.find { |f| File.exist?(f) } || files.first
     end
   end
 end

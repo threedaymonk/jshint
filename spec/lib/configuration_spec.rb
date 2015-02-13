@@ -2,41 +2,30 @@ require 'spec_helper'
 require 'jshint/configuration'
 
 describe Jshint::Configuration do
-  let(:config) { File.join(Jshint.root, 'spec', 'fixtures', 'jshint.yml') }
+  subject { described_class.new(config) }
 
   describe "core behaviour" do
-    before do
-      allow_any_instance_of(described_class).
-        to receive(:default_config_path).and_return('/foo/bar.yml')
-      allow_any_instance_of(described_class).
-        to receive(:parse_yaml_config).and_return(YAML.load_file(config))
-    end
+    let(:config) { File.expand_path('../../fixtures/jshint.yml', __FILE__) }
 
     it "should allow the developer to index in to config options" do
-      config = described_class.new
-      expect(config[:boss]).to be_truthy
-      expect(config[:browser]).to be_truthy
+      expect(subject[:boss]).to be_truthy
+      expect(subject[:browser]).to be_truthy
     end
 
     it "should return a Hash of the global variables declared" do
-      config = described_class.new
-      expect(config.global_variables).to eq({ "jQuery" => true, "$" => true })
+      expect(subject.global_variables).to eq({ "jQuery" => true, "$" => true })
     end
 
     it "should return a Hash of the lint options declared" do
-      config = described_class.new
-      expect(config.lint_options).
-        to eq(config.options["options"].reject { |key| key == "globals" })
+      expect(subject.lint_options).
+        to eq(subject.options["options"].reject { |key| key == "globals" })
     end
 
     it "should return an array of files" do
-      config = described_class.new
-      expect(config.files).to eq(["**/*.js"])
+      expect(subject.files).to eq(["**/*.js"])
     end
 
     context "search paths" do
-      subject { described_class.new }
-
       it "should default the exclusion paths to an empty array" do
         expect(subject.excluded_search_paths).to eq([])
       end
@@ -52,6 +41,27 @@ describe Jshint::Configuration do
         expect(subject.search_paths).
           to eq(['app/assets/javascripts', 'lib/assets/javascripts'])
       end
+    end
+  end
+
+  describe "with JSON configuration file" do
+    let(:config) { File.expand_path('../../fixtures/.jshintrc', __FILE__) }
+
+    it "should return a Hash of the global variables declared" do
+      expect(subject.global_variables).to eq({ "jQuery" => false, "$" => true })
+    end
+
+    it "should return a Hash of the lint options declared" do
+      expect(subject.lint_options["camelcase"]).to eq(true)
+      expect(subject.lint_options["plusplus"]).to eq(false)
+    end
+
+    it "should include all js files" do
+      expect(subject.files).to eq(["**/*.js"])
+    end
+
+    it "should exclude nothing" do
+      expect(subject.excluded_search_paths).to eq([])
     end
   end
 end

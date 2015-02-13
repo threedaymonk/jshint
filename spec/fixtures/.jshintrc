@@ -1,0 +1,9 @@
+{
+  "camelcase": true,
+  "eqeqeq": true,
+  "plusplus": false,
+  "globals": {
+    "jQuery": false,
+    "$": true
+  }
+}
